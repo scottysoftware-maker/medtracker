@@ -1,0 +1,1366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MedTracker Desktop Tool v1.0.0</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 5px;
+        }
+
+        .header .version {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .header p {
+            font-size: 16px;
+            opacity: 0.9;
+            margin-top: 10px;
+        }
+
+        .tabs {
+            display: flex;
+            background: #ecf0f1;
+            border-bottom: 2px solid #bdc3c7;
+            overflow-x: auto;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 15px 25px;
+            cursor: pointer;
+            background: #ecf0f1;
+            border: none;
+            font-size: 15px;
+            font-weight: 600;
+            color: #34495e;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+
+        .tab:hover {
+            background: #d5dbdb;
+        }
+
+        .tab.active {
+            background: white;
+            color: #2196F3;
+            border-bottom: 3px solid #2196F3;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 30px;
+            max-height: calc(100vh - 300px);
+            overflow-y: auto;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #34495e;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #2196F3;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-right: 10px;
+            margin-top: 10px;
+        }
+
+        .btn-primary {
+            background: #2196F3;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1976D2;
+        }
+
+        .btn-success {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #45a049;
+        }
+
+        .btn-danger {
+            background: #f44336;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #da190b;
+        }
+
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #7f8c8d;
+        }
+
+        .item-list {
+            margin-top: 30px;
+        }
+
+        .item {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .item-info {
+            flex: 1;
+        }
+
+        .item-info h4 {
+            color: #2196F3;
+            margin-bottom: 5px;
+        }
+
+        .item-info p {
+            color: #666;
+            font-size: 14px;
+            margin: 3px 0;
+        }
+
+        .item-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .item-actions button {
+            padding: 8px 16px;
+            font-size: 13px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .status-active {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .status-chronic {
+            background: #fff3e0;
+            color: #ef6c00;
+        }
+
+        .status-resolved {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .toolbar {
+            background: #f8f9fa;
+            padding: 20px;
+            border-bottom: 2px solid #e9ecef;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #95a5a6;
+        }
+
+        .empty-state svg {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        .about-content {
+            line-height: 1.8;
+        }
+
+        .about-content h3 {
+            color: #2196F3;
+            margin-top: 25px;
+            margin-bottom: 15px;
+        }
+
+        .about-content ul {
+            margin-left: 30px;
+            margin-bottom: 15px;
+        }
+
+        .about-content li {
+            margin-bottom: 8px;
+        }
+
+        .about-content a {
+            color: #2196F3;
+            text-decoration: none;
+        }
+
+        .about-content a:hover {
+            text-decoration: underline;
+        }
+
+        .changelog {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 24px;
+            }
+
+            .tabs {
+                flex-direction: column;
+            }
+
+            .tab {
+                width: 100%;
+                text-align: left;
+            }
+
+            .item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .item-actions {
+                margin-top: 15px;
+                width: 100%;
+            }
+
+            .item-actions button {
+                flex: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>MedTracker Desktop Tool</h1>
+            <p class="version">Version 1.0.0</p>
+            <p>Professional medical data entry and management</p>
+        </div>
+
+        <div class="toolbar">
+            <label for="importFile" class="btn btn-secondary" style="cursor: pointer;">
+                📁 Import JSON
+            </label>
+            <input type="file" id="importFile" accept=".json" style="display: none;">
+            <button class="btn btn-success" onclick="exportJSON()">💾 Export JSON</button>
+            <button class="btn btn-danger" onclick="clearAll()">🗑️ Clear All Data</button>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('people')">👥 People</button>
+            <button class="tab" onclick="switchTab('doctors')">🩺 Doctors</button>
+            <button class="tab" onclick="switchTab('medications')">💊 Medications</button>
+            <button class="tab" onclick="switchTab('conditions')">❤️ Conditions</button>
+            <button class="tab" onclick="switchTab('allergies')">⚠️ Allergies</button>
+            <button class="tab" onclick="switchTab('appointments')">📅 Appointments</button>
+            <button class="tab" onclick="switchTab('about')">ℹ️ About</button>
+        </div>
+
+        <!-- People Tab -->
+        <div id="people" class="tab-content active">
+            <h2>Manage People</h2>
+            <div class="form-group">
+                <label>Name *</label>
+                <input type="text" id="personName" placeholder="Enter name">
+            </div>
+            <div class="form-group">
+                <label>Relationship</label>
+                <input type="text" id="personRelationship" placeholder="e.g., Self, Mother, Father, Child">
+            </div>
+            <div class="form-group">
+                <label>Date of Birth</label>
+                <input type="date" id="personDob">
+            </div>
+            <button class="btn btn-primary" onclick="addPerson()">Add Person</button>
+            <div id="peopleList" class="item-list"></div>
+        </div>
+
+        <!-- Doctors Tab -->
+        <div id="doctors" class="tab-content">
+            <h2>Manage Doctors</h2>
+            <div class="form-group">
+                <label>Doctor Name *</label>
+                <input type="text" id="doctorName" placeholder="Enter doctor name">
+            </div>
+            <div class="form-group">
+                <label>Specialty</label>
+                <input type="text" id="doctorSpecialty" placeholder="e.g., Cardiologist, General Practice">
+            </div>
+            <div class="form-group">
+                <label>Phone</label>
+                <input type="tel" id="doctorPhone" placeholder="(555) 123-4567">
+            </div>
+            <div class="form-group">
+                <label>Address</label>
+                <textarea id="doctorAddress" placeholder="Enter address"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Portal URL</label>
+                <input type="url" id="doctorPortal" placeholder="https://example.com/portal">
+            </div>
+            <div class="form-group">
+                <label>Notes</label>
+                <textarea id="doctorNotes" placeholder="Additional notes"></textarea>
+            </div>
+            <button class="btn btn-primary" onclick="addDoctor()">Add Doctor</button>
+            <div id="doctorsList" class="item-list"></div>
+        </div>
+
+        <!-- Medications Tab -->
+        <div id="medications" class="tab-content">
+            <h2>Manage Medications</h2>
+            <div class="form-group">
+                <label>Person *</label>
+                <select id="medPersonId">
+                    <option value="">Select person</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Medication Name *</label>
+                <input type="text" id="medName" placeholder="Enter medication name">
+            </div>
+            <div class="form-group">
+                <label>Dosage</label>
+                <input type="text" id="medDosage" placeholder="e.g., 10mg, 500mg">
+            </div>
+            <div class="form-group">
+                <label>Frequency</label>
+                <input type="text" id="medFrequency" placeholder="e.g., Once daily, Twice daily">
+            </div>
+            <div class="form-group">
+                <label>Prescribing Doctor</label>
+                <select id="medDoctorId">
+                    <option value="">Select doctor (optional)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Active</label>
+                <select id="medActive">
+                    <option value="true">Yes - Currently taking</option>
+                    <option value="false">No - Discontinued</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Notes</label>
+                <textarea id="medNotes" placeholder="Additional notes"></textarea>
+            </div>
+            <button class="btn btn-primary" onclick="addMedication()">Add Medication</button>
+            <div id="medicationsList" class="item-list"></div>
+        </div>
+
+        <!-- Conditions Tab -->
+        <div id="conditions" class="tab-content">
+            <h2>Manage Medical Conditions</h2>
+            <div class="form-group">
+                <label>Person *</label>
+                <select id="condPersonId">
+                    <option value="">Select person</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Condition Name *</label>
+                <input type="text" id="condName" placeholder="Enter condition name">
+            </div>
+            <div class="form-group">
+                <label>Status *</label>
+                <select id="condStatus">
+                    <option value="Active">Active</option>
+                    <option value="Chronic">Chronic</option>
+                    <option value="Resolved">Resolved</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Diagnosis Date</label>
+                <input type="date" id="condDate">
+            </div>
+            <div class="form-group">
+                <label>Diagnosing Doctor</label>
+                <select id="condDoctorId">
+                    <option value="">Select doctor (optional)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Notes</label>
+                <textarea id="condNotes" placeholder="Additional notes"></textarea>
+            </div>
+            <button class="btn btn-primary" onclick="addCondition()">Add Condition</button>
+            <div id="conditionsList" class="item-list"></div>
+        </div>
+
+        <!-- Allergies Tab -->
+        <div id="allergies" class="tab-content">
+            <h2>Manage Allergies</h2>
+            <div class="form-group">
+                <label>Person *</label>
+                <select id="allergyPersonId">
+                    <option value="">Select person</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Allergen *</label>
+                <input type="text" id="allergyName" placeholder="e.g., Penicillin, Peanuts, Latex">
+            </div>
+            <div class="form-group">
+                <label>Reaction</label>
+                <input type="text" id="allergyReaction" placeholder="e.g., Hives, Anaphylaxis">
+            </div>
+            <div class="form-group">
+                <label>Severity</label>
+                <select id="allergySeverity">
+                    <option value="">Select severity</option>
+                    <option value="Mild">Mild</option>
+                    <option value="Moderate">Moderate</option>
+                    <option value="Severe">Severe</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Notes</label>
+                <textarea id="allergyNotes" placeholder="Additional notes"></textarea>
+            </div>
+            <button class="btn btn-primary" onclick="addAllergy()">Add Allergy</button>
+            <div id="allergiesList" class="item-list"></div>
+        </div>
+
+        <!-- Appointments Tab -->
+        <div id="appointments" class="tab-content">
+            <h2>Manage Appointments</h2>
+            <div class="form-group">
+                <label>Person *</label>
+                <select id="apptPersonId">
+                    <option value="">Select person</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Date & Time *</label>
+                <input type="datetime-local" id="apptDateTime">
+            </div>
+            <div class="form-group">
+                <label>Doctor</label>
+                <select id="apptDoctorId">
+                    <option value="">Select doctor (optional)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Reason</label>
+                <input type="text" id="apptReason" placeholder="e.g., Checkup, Follow-up">
+            </div>
+            <div class="form-group">
+                <label>Notes</label>
+                <textarea id="apptNotes" placeholder="Additional notes"></textarea>
+            </div>
+            <button class="btn btn-primary" onclick="addAppointment()">Add Appointment</button>
+            <div id="appointmentsList" class="item-list"></div>
+        </div>
+
+        <!-- About Tab -->
+        <div id="about" class="tab-content">
+            <div class="about-content">
+                <h2>About MedTracker Desktop Tool</h2>
+                <p><strong>Version:</strong> 1.0.0</p>
+                <p><strong>Developer:</strong> Scott's IT Solutions</p>
+                <p><strong>Contact:</strong> <a href="mailto:scottysoftware@gmail.com">scottysoftware@gmail.com</a></p>
+
+                <h3>What is this tool?</h3>
+                <p>MedTracker Desktop Tool is a browser-based data entry and management application that allows you to enter medical information on your computer using a full keyboard and large screen, then export it to import into the MedTracker Android app.</p>
+
+                <h3>Features</h3>
+                <ul>
+                    <li>✅ Add, edit, and delete people, doctors, medications, conditions, allergies, and appointments</li>
+                    <li>✅ Full keyboard data entry on desktop/laptop computers</li>
+                    <li>✅ Support for condition status (Active, Chronic, Resolved)</li>
+                    <li>✅ Import existing JSON backups from MedTracker app</li>
+                    <li>✅ Export JSON files compatible with MedTracker app</li>
+                    <li>✅ Works offline - no internet required</li>
+                    <li>✅ 100% local - your data never leaves your device</li>
+                    <li>✅ Compatible with Windows, Mac, and Linux</li>
+                </ul>
+
+                <h3>How to Use</h3>
+                <ol>
+                    <li><strong>Add People First:</strong> Start by adding family members in the People tab</li>
+                    <li><strong>Add Doctors:</strong> Add doctors you visit</li>
+                    <li><strong>Add Medical Data:</strong> Add medications, conditions, allergies, and appointments</li>
+                    <li><strong>Export JSON:</strong> Click "Export JSON" to download the data file</li>
+                    <li><strong>Transfer to Phone:</strong> Email, upload to cloud storage, or copy the JSON file to your phone</li>
+                    <li><strong>Import in App:</strong> Open MedTracker app → Menu → Import Database → Select the JSON file</li>
+                </ol>
+
+                <h3>Privacy & Security</h3>
+                <p>This tool runs entirely in your browser. No data is sent to any server. All information is stored locally in your browser until you export it. When you close the browser, you can export your data or clear it using the "Clear All Data" button.</p>
+
+                <h3>Download Latest Version</h3>
+                <p>Get the latest version of this tool at:<br>
+                <a href="https://scottysoftware-maker.github.io/medtracker/desktop.html" target="_blank">https://scottysoftware-maker.github.io/medtracker/desktop.html</a></p>
+
+                <h3>MedTracker Android App</h3>
+                <p>Download MedTracker from the Google Play Store (coming soon)</p>
+
+                <div class="changelog">
+                    <h3>Changelog</h3>
+                    <p><strong>Version 1.0.0</strong> (February 21, 2026)</p>
+                    <ul>
+                        <li>Initial release</li>
+                        <li>Add/Edit/Delete functionality for all data types</li>
+                        <li>Condition status support (Active/Chronic/Resolved)</li>
+                        <li>JSON import/export</li>
+                        <li>Responsive design for desktop and mobile browsers</li>
+                    </ul>
+                </div>
+
+                <p style="margin-top: 30px; padding-top: 20px; border-top: 2px solid #e0e0e0;">
+                    <strong>© 2026 Scott's IT Solutions. All Rights Reserved.</strong>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data storage
+        let data = {
+            people: [],
+            doctors: [],
+            medications: [],
+            conditions: [],
+            allergies: [],
+            appointments: []
+        };
+
+        let nextIds = {
+            people: 1,
+            doctors: 1,
+            medications: 1,
+            conditions: 1,
+            allergies: 1,
+            appointments: 1
+        };
+
+        let editMode = {
+            type: null,
+            id: null
+        };
+
+        // Tab switching
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+
+            // Update selectors when switching to tabs that need them
+            if (['medications', 'conditions', 'allergies', 'appointments'].includes(tabName)) {
+                updatePersonSelectors();
+                updateDoctorSelectors();
+            }
+        }
+
+        // Add Person
+        function addPerson() {
+            const name = document.getElementById('personName').value.trim();
+            if (!name) {
+                alert('Please enter a name');
+                return;
+            }
+
+            if (editMode.type === 'person') {
+                // Edit mode
+                const person = data.people.find(p => p.id === editMode.id);
+                person.name = name;
+                person.relationship = document.getElementById('personRelationship').value.trim();
+                person.dateOfBirth = document.getElementById('personDob').value;
+                
+                editMode = { type: null, id: null };
+                document.querySelector('#people .btn-primary').textContent = 'Add Person';
+            } else {
+                // Add mode
+                data.people.push({
+                    id: nextIds.people++,
+                    name: name,
+                    relationship: document.getElementById('personRelationship').value.trim(),
+                    dateOfBirth: document.getElementById('personDob').value
+                });
+            }
+
+            // Clear form
+            document.getElementById('personName').value = '';
+            document.getElementById('personRelationship').value = '';
+            document.getElementById('personDob').value = '';
+
+            renderPeople();
+            updatePersonSelectors();
+        }
+
+        function editPerson(id) {
+            const person = data.people.find(p => p.id === id);
+            document.getElementById('personName').value = person.name;
+            document.getElementById('personRelationship').value = person.relationship || '';
+            document.getElementById('personDob').value = person.dateOfBirth || '';
+            
+            editMode = { type: 'person', id: id };
+            document.querySelector('#people .btn-primary').textContent = 'Update Person';
+            
+            // Scroll to form
+            document.getElementById('people').scrollTop = 0;
+        }
+
+        function deletePerson(id) {
+            if (!confirm('Delete this person and all their medical data?')) return;
+            
+            data.people = data.people.filter(p => p.id !== id);
+            data.medications = data.medications.filter(m => m.personId !== id);
+            data.conditions = data.conditions.filter(c => c.personId !== id);
+            data.allergies = data.allergies.filter(a => a.personId !== id);
+            data.appointments = data.appointments.filter(a => a.personId !== id);
+            
+            renderAll();
+            updatePersonSelectors();
+        }
+
+        function renderPeople() {
+            const list = document.getElementById('peopleList');
+            
+            if (data.people.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <p>No people added yet. Add your first person to get started!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            list.innerHTML = data.people.map(person => `
+                <div class="item">
+                    <div class="item-info">
+                        <h4>${person.name}</h4>
+                        ${person.relationship ? `<p><strong>Relationship:</strong> ${person.relationship}</p>` : ''}
+                        ${person.dateOfBirth ? `<p><strong>DOB:</strong> ${person.dateOfBirth}</p>` : ''}
+                    </div>
+                    <div class="item-actions">
+                        <button class="btn btn-secondary" onclick="editPerson(${person.id})">Edit</button>
+                        <button class="btn btn-danger" onclick="deletePerson(${person.id})">Delete</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Add Doctor
+        function addDoctor() {
+            const name = document.getElementById('doctorName').value.trim();
+            if (!name) {
+                alert('Please enter doctor name');
+                return;
+            }
+
+            if (editMode.type === 'doctor') {
+                const doctor = data.doctors.find(d => d.id === editMode.id);
+                doctor.name = name;
+                doctor.specialty = document.getElementById('doctorSpecialty').value.trim();
+                doctor.phone = document.getElementById('doctorPhone').value.trim();
+                doctor.address = document.getElementById('doctorAddress').value.trim();
+                doctor.portalUrl = document.getElementById('doctorPortal').value.trim();
+                doctor.notes = document.getElementById('doctorNotes').value.trim();
+                
+                editMode = { type: null, id: null };
+                document.querySelector('#doctors .btn-primary').textContent = 'Add Doctor';
+            } else {
+                data.doctors.push({
+                    id: nextIds.doctors++,
+                    name: name,
+                    specialty: document.getElementById('doctorSpecialty').value.trim(),
+                    phone: document.getElementById('doctorPhone').value.trim(),
+                    address: document.getElementById('doctorAddress').value.trim(),
+                    portalUrl: document.getElementById('doctorPortal').value.trim(),
+                    notes: document.getElementById('doctorNotes').value.trim()
+                });
+            }
+
+            // Clear form
+            document.getElementById('doctorName').value = '';
+            document.getElementById('doctorSpecialty').value = '';
+            document.getElementById('doctorPhone').value = '';
+            document.getElementById('doctorAddress').value = '';
+            document.getElementById('doctorPortal').value = '';
+            document.getElementById('doctorNotes').value = '';
+
+            renderDoctors();
+            updateDoctorSelectors();
+        }
+
+        function editDoctor(id) {
+            const doctor = data.doctors.find(d => d.id === id);
+            document.getElementById('doctorName').value = doctor.name;
+            document.getElementById('doctorSpecialty').value = doctor.specialty || '';
+            document.getElementById('doctorPhone').value = doctor.phone || '';
+            document.getElementById('doctorAddress').value = doctor.address || '';
+            document.getElementById('doctorPortal').value = doctor.portalUrl || '';
+            document.getElementById('doctorNotes').value = doctor.notes || '';
+            
+            editMode = { type: 'doctor', id: id };
+            document.querySelector('#doctors .btn-primary').textContent = 'Update Doctor';
+            document.getElementById('doctors').scrollTop = 0;
+        }
+
+        function deleteDoctor(id) {
+            if (!confirm('Delete this doctor?')) return;
+            data.doctors = data.doctors.filter(d => d.id !== id);
+            renderDoctors();
+            updateDoctorSelectors();
+        }
+
+        function renderDoctors() {
+            const list = document.getElementById('doctorsList');
+            
+            if (data.doctors.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <p>No doctors added yet.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            list.innerHTML = data.doctors.map(doctor => `
+                <div class="item">
+                    <div class="item-info">
+                        <h4>${doctor.name}</h4>
+                        ${doctor.specialty ? `<p><strong>Specialty:</strong> ${doctor.specialty}</p>` : ''}
+                        ${doctor.phone ? `<p><strong>Phone:</strong> ${doctor.phone}</p>` : ''}
+                        ${doctor.address ? `<p><strong>Address:</strong> ${doctor.address}</p>` : ''}
+                    </div>
+                    <div class="item-actions">
+                        <button class="btn btn-secondary" onclick="editDoctor(${doctor.id})">Edit</button>
+                        <button class="btn btn-danger" onclick="deleteDoctor(${doctor.id})">Delete</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Add Medication
+        function addMedication() {
+            const personId = parseInt(document.getElementById('medPersonId').value);
+            const name = document.getElementById('medName').value.trim();
+            
+            if (!personId || !name) {
+                alert('Please select a person and enter medication name');
+                return;
+            }
+
+            if (editMode.type === 'medication') {
+                const med = data.medications.find(m => m.id === editMode.id);
+                med.personId = personId;
+                med.name = name;
+                med.dosage = document.getElementById('medDosage').value.trim();
+                med.frequency = document.getElementById('medFrequency').value.trim();
+                med.doctorId = parseInt(document.getElementById('medDoctorId').value) || null;
+                med.active = document.getElementById('medActive').value === 'true';
+                med.notes = document.getElementById('medNotes').value.trim();
+                
+                editMode = { type: null, id: null };
+                document.querySelector('#medications .btn-primary').textContent = 'Add Medication';
+            } else {
+                data.medications.push({
+                    id: nextIds.medications++,
+                    personId: personId,
+                    name: name,
+                    dosage: document.getElementById('medDosage').value.trim(),
+                    frequency: document.getElementById('medFrequency').value.trim(),
+                    doctorId: parseInt(document.getElementById('medDoctorId').value) || null,
+                    active: document.getElementById('medActive').value === 'true',
+                    notes: document.getElementById('medNotes').value.trim()
+                });
+            }
+
+            // Clear form
+            document.getElementById('medPersonId').value = '';
+            document.getElementById('medName').value = '';
+            document.getElementById('medDosage').value = '';
+            document.getElementById('medFrequency').value = '';
+            document.getElementById('medDoctorId').value = '';
+            document.getElementById('medActive').value = 'true';
+            document.getElementById('medNotes').value = '';
+
+            renderMedications();
+        }
+
+        function editMedication(id) {
+            const med = data.medications.find(m => m.id === id);
+            document.getElementById('medPersonId').value = med.personId;
+            document.getElementById('medName').value = med.name;
+            document.getElementById('medDosage').value = med.dosage || '';
+            document.getElementById('medFrequency').value = med.frequency || '';
+            document.getElementById('medDoctorId').value = med.doctorId || '';
+            document.getElementById('medActive').value = med.active.toString();
+            document.getElementById('medNotes').value = med.notes || '';
+            
+            editMode = { type: 'medication', id: id };
+            document.querySelector('#medications .btn-primary').textContent = 'Update Medication';
+            document.getElementById('medications').scrollTop = 0;
+        }
+
+        function deleteMedication(id) {
+            if (!confirm('Delete this medication?')) return;
+            data.medications = data.medications.filter(m => m.id !== id);
+            renderMedications();
+        }
+
+        function renderMedications() {
+            const list = document.getElementById('medicationsList');
+            
+            if (data.medications.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <p>No medications added yet.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            list.innerHTML = data.medications.map(med => {
+                const person = data.people.find(p => p.id === med.personId);
+                const doctor = med.doctorId ? data.doctors.find(d => d.id === med.doctorId) : null;
+                
+                return `
+                    <div class="item">
+                        <div class="item-info">
+                            <h4>${med.name} ${med.active ? '🟢' : '🟠'}</h4>
+                            <p><strong>Person:</strong> ${person?.name || 'Unknown'}</p>
+                            ${med.dosage ? `<p><strong>Dosage:</strong> ${med.dosage}</p>` : ''}
+                            ${med.frequency ? `<p><strong>Frequency:</strong> ${med.frequency}</p>` : ''}
+                            ${doctor ? `<p><strong>Prescribed by:</strong> ${doctor.name}</p>` : ''}
+                            <p><strong>Status:</strong> ${med.active ? 'Active' : 'Inactive'}</p>
+                        </div>
+                        <div class="item-actions">
+                            <button class="btn btn-secondary" onclick="editMedication(${med.id})">Edit</button>
+                            <button class="btn btn-danger" onclick="deleteMedication(${med.id})">Delete</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Add Condition
+        function addCondition() {
+            const personId = parseInt(document.getElementById('condPersonId').value);
+            const name = document.getElementById('condName').value.trim();
+            
+            if (!personId || !name) {
+                alert('Please select a person and enter condition name');
+                return;
+            }
+
+            if (editMode.type === 'condition') {
+                const cond = data.conditions.find(c => c.id === editMode.id);
+                cond.personId = personId;
+                cond.name = name;
+                cond.status = document.getElementById('condStatus').value;
+                cond.diagnosisDate = document.getElementById('condDate').value;
+                cond.doctorId = parseInt(document.getElementById('condDoctorId').value) || null;
+                cond.notes = document.getElementById('condNotes').value.trim();
+                
+                editMode = { type: null, id: null };
+                document.querySelector('#conditions .btn-primary').textContent = 'Add Condition';
+            } else {
+                data.conditions.push({
+                    id: nextIds.conditions++,
+                    personId: personId,
+                    name: name,
+                    status: document.getElementById('condStatus').value,
+                    diagnosisDate: document.getElementById('condDate').value,
+                    doctorId: parseInt(document.getElementById('condDoctorId').value) || null,
+                    notes: document.getElementById('condNotes').value.trim()
+                });
+            }
+
+            // Clear form
+            document.getElementById('condPersonId').value = '';
+            document.getElementById('condName').value = '';
+            document.getElementById('condStatus').value = 'Active';
+            document.getElementById('condDate').value = '';
+            document.getElementById('condDoctorId').value = '';
+            document.getElementById('condNotes').value = '';
+
+            renderConditions();
+        }
+
+        function editCondition(id) {
+            const cond = data.conditions.find(c => c.id === id);
+            document.getElementById('condPersonId').value = cond.personId;
+            document.getElementById('condName').value = cond.name;
+            document.getElementById('condStatus').value = cond.status || 'Active';
+            document.getElementById('condDate').value = cond.diagnosisDate || '';
+            document.getElementById('condDoctorId').value = cond.doctorId || '';
+            document.getElementById('condNotes').value = cond.notes || '';
+            
+            editMode = { type: 'condition', id: id };
+            document.querySelector('#conditions .btn-primary').textContent = 'Update Condition';
+            document.getElementById('conditions').scrollTop = 0;
+        }
+
+        function deleteCondition(id) {
+            if (!confirm('Delete this condition?')) return;
+            data.conditions = data.conditions.filter(c => c.id !== id);
+            renderConditions();
+        }
+
+        function renderConditions() {
+            const list = document.getElementById('conditionsList');
+            
+            if (data.conditions.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <p>No conditions added yet.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            list.innerHTML = data.conditions.map(cond => {
+                const person = data.people.find(p => p.id === cond.personId);
+                const doctor = cond.doctorId ? data.doctors.find(d => d.id === cond.doctorId) : null;
+                const statusClass = `status-${cond.status.toLowerCase()}`;
+                
+                return `
+                    <div class="item">
+                        <div class="item-info">
+                            <h4>${cond.name} <span class="status-badge ${statusClass}">${cond.status}</span></h4>
+                            <p><strong>Person:</strong> ${person?.name || 'Unknown'}</p>
+                            ${cond.diagnosisDate ? `<p><strong>Diagnosed:</strong> ${cond.diagnosisDate}</p>` : ''}
+                            ${doctor ? `<p><strong>Diagnosed by:</strong> ${doctor.name}</p>` : ''}
+                        </div>
+                        <div class="item-actions">
+                            <button class="btn btn-secondary" onclick="editCondition(${cond.id})">Edit</button>
+                            <button class="btn btn-danger" onclick="deleteCondition(${cond.id})">Delete</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Add Allergy
+        function addAllergy() {
+            const personId = parseInt(document.getElementById('allergyPersonId').value);
+            const name = document.getElementById('allergyName').value.trim();
+            
+            if (!personId || !name) {
+                alert('Please select a person and enter allergen');
+                return;
+            }
+
+            if (editMode.type === 'allergy') {
+                const allergy = data.allergies.find(a => a.id === editMode.id);
+                allergy.personId = personId;
+                allergy.allergen = name;
+                allergy.reaction = document.getElementById('allergyReaction').value.trim();
+                allergy.severity = document.getElementById('allergySeverity').value;
+                allergy.notes = document.getElementById('allergyNotes').value.trim();
+                
+                editMode = { type: null, id: null };
+                document.querySelector('#allergies .btn-primary').textContent = 'Add Allergy';
+            } else {
+                data.allergies.push({
+                    id: nextIds.allergies++,
+                    personId: personId,
+                    allergen: name,
+                    reaction: document.getElementById('allergyReaction').value.trim(),
+                    severity: document.getElementById('allergySeverity').value,
+                    notes: document.getElementById('allergyNotes').value.trim()
+                });
+            }
+
+            // Clear form
+            document.getElementById('allergyPersonId').value = '';
+            document.getElementById('allergyName').value = '';
+            document.getElementById('allergyReaction').value = '';
+            document.getElementById('allergySeverity').value = '';
+            document.getElementById('allergyNotes').value = '';
+
+            renderAllergies();
+        }
+
+        function editAllergy(id) {
+            const allergy = data.allergies.find(a => a.id === id);
+            document.getElementById('allergyPersonId').value = allergy.personId;
+            document.getElementById('allergyName').value = allergy.allergen;
+            document.getElementById('allergyReaction').value = allergy.reaction || '';
+            document.getElementById('allergySeverity').value = allergy.severity || '';
+            document.getElementById('allergyNotes').value = allergy.notes || '';
+            
+            editMode = { type: 'allergy', id: id };
+            document.querySelector('#allergies .btn-primary').textContent = 'Update Allergy';
+            document.getElementById('allergies').scrollTop = 0;
+        }
+
+        function deleteAllergy(id) {
+            if (!confirm('Delete this allergy?')) return;
+            data.allergies = data.allergies.filter(a => a.id !== id);
+            renderAllergies();
+        }
+
+        function renderAllergies() {
+            const list = document.getElementById('allergiesList');
+            
+            if (data.allergies.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <p>No allergies added yet.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            list.innerHTML = data.allergies.map(allergy => {
+                const person = data.people.find(p => p.id === allergy.personId);
+                
+                return `
+                    <div class="item">
+                        <div class="item-info">
+                            <h4>${allergy.allergen}</h4>
+                            <p><strong>Person:</strong> ${person?.name || 'Unknown'}</p>
+                            ${allergy.reaction ? `<p><strong>Reaction:</strong> ${allergy.reaction}</p>` : ''}
+                            ${allergy.severity ? `<p><strong>Severity:</strong> ${allergy.severity}</p>` : ''}
+                        </div>
+                        <div class="item-actions">
+                            <button class="btn btn-secondary" onclick="editAllergy(${allergy.id})">Edit</button>
+                            <button class="btn btn-danger" onclick="deleteAllergy(${allergy.id})">Delete</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Add Appointment
+        function addAppointment() {
+            const personId = parseInt(document.getElementById('apptPersonId').value);
+            const dateTime = document.getElementById('apptDateTime').value;
+            
+            if (!personId || !dateTime) {
+                alert('Please select a person and enter date/time');
+                return;
+            }
+
+            if (editMode.type === 'appointment') {
+                const appt = data.appointments.find(a => a.id === editMode.id);
+                appt.personId = personId;
+                appt.dateTime = dateTime;
+                appt.doctorId = parseInt(document.getElementById('apptDoctorId').value) || null;
+                appt.reason = document.getElementById('apptReason').value.trim();
+                appt.notes = document.getElementById('apptNotes').value.trim();
+                
+                editMode = { type: null, id: null };
+                document.querySelector('#appointments .btn-primary').textContent = 'Add Appointment';
+            } else {
+                data.appointments.push({
+                    id: nextIds.appointments++,
+                    personId: personId,
+                    dateTime: dateTime,
+                    doctorId: parseInt(document.getElementById('apptDoctorId').value) || null,
+                    reason: document.getElementById('apptReason').value.trim(),
+                    notes: document.getElementById('apptNotes').value.trim()
+                });
+            }
+
+            // Clear form
+            document.getElementById('apptPersonId').value = '';
+            document.getElementById('apptDateTime').value = '';
+            document.getElementById('apptDoctorId').value = '';
+            document.getElementById('apptReason').value = '';
+            document.getElementById('apptNotes').value = '';
+
+            renderAppointments();
+        }
+
+        function editAppointment(id) {
+            const appt = data.appointments.find(a => a.id === id);
+            document.getElementById('apptPersonId').value = appt.personId;
+            document.getElementById('apptDateTime').value = appt.dateTime;
+            document.getElementById('apptDoctorId').value = appt.doctorId || '';
+            document.getElementById('apptReason').value = appt.reason || '';
+            document.getElementById('apptNotes').value = appt.notes || '';
+            
+            editMode = { type: 'appointment', id: id };
+            document.querySelector('#appointments .btn-primary').textContent = 'Update Appointment';
+            document.getElementById('appointments').scrollTop = 0;
+        }
+
+        function deleteAppointment(id) {
+            if (!confirm('Delete this appointment?')) return;
+            data.appointments = data.appointments.filter(a => a.id !== id);
+            renderAppointments();
+        }
+
+        function renderAppointments() {
+            const list = document.getElementById('appointmentsList');
+            
+            if (data.appointments.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <p>No appointments added yet.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            list.innerHTML = data.appointments.map(appt => {
+                const person = data.people.find(p => p.id === appt.personId);
+                const doctor = appt.doctorId ? data.doctors.find(d => d.id === appt.doctorId) : null;
+                const date = new Date(appt.dateTime);
+                const dateStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                
+                return `
+                    <div class="item">
+                        <div class="item-info">
+                            <h4>${dateStr}</h4>
+                            <p><strong>Person:</strong> ${person?.name || 'Unknown'}</p>
+                            ${doctor ? `<p><strong>Doctor:</strong> ${doctor.name}</p>` : ''}
+                            ${appt.reason ? `<p><strong>Reason:</strong> ${appt.reason}</p>` : ''}
+                        </div>
+                        <div class="item-actions">
+                            <button class="btn btn-secondary" onclick="editAppointment(${appt.id})">Edit</button>
+                            <button class="btn btn-danger" onclick="deleteAppointment(${appt.id})">Delete</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Update selectors
+        function updatePersonSelectors() {
+            const selectors = [
+                document.getElementById('medPersonId'),
+                document.getElementById('condPersonId'),
+                document.getElementById('allergyPersonId'),
+                document.getElementById('apptPersonId')
+            ];
+
+            selectors.forEach(select => {
+                const currentValue = select.value;
+                select.innerHTML = '<option value="">Select person</option>' +
+                    data.people.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+                select.value = currentValue;
+            });
+        }
+
+        function updateDoctorSelectors() {
+            const selectors = [
+                document.getElementById('medDoctorId'),
+                document.getElementById('condDoctorId'),
+                document.getElementById('apptDoctorId')
+            ];
+
+            selectors.forEach(select => {
+                const currentValue = select.value;
+                select.innerHTML = '<option value="">Select doctor (optional)</option>' +
+                    data.doctors.map(d => `<option value="${d.id}">${d.name}${d.specialty ? ' - ' + d.specialty : ''}</option>`).join('');
+                select.value = currentValue;
+            });
+        }
+
+        // Import JSON
+        document.getElementById('importFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                try {
+                    const imported = JSON.parse(event.target.result);
+                    
+                    // Validate structure
+                    if (!imported.people || !Array.isArray(imported.people)) {
+                        throw new Error('Invalid JSON structure');
+                    }
+
+                    // Import data
+                    data = {
+                        people: imported.people || [],
+                        doctors: imported.doctors || [],
+                        medications: imported.medications || [],
+                        conditions: imported.conditions || [],
+                        allergies: imported.allergies || [],
+                        appointments: imported.appointments || []
+                    };
+
+                    // Update next IDs
+                    nextIds = {
+                        people: Math.max(...data.people.map(p => p.id), 0) + 1,
+                        doctors: Math.max(...data.doctors.map(d => d.id), 0) + 1,
+                        medications: Math.max(...data.medications.map(m => m.id), 0) + 1,
+                        conditions: Math.max(...data.conditions.map(c => c.id), 0) + 1,
+                        allergies: Math.max(...data.allergies.map(a => a.id), 0) + 1,
+                        appointments: Math.max(...data.appointments.map(a => a.id), 0) + 1
+                    };
+
+                    renderAll();
+                    updatePersonSelectors();
+                    updateDoctorSelectors();
+                    
+                    alert('Data imported successfully!');
+                } catch (err) {
+                    alert('Error importing JSON: ' + err.message);
+                }
+            };
+            reader.readAsText(file);
+            
+            // Reset file input
+            e.target.value = '';
+        });
+
+        // Export JSON
+        function exportJSON() {
+            if (data.people.length === 0) {
+                alert('Add at least one person before exporting!');
+                return;
+            }
+
+            const json = JSON.stringify(data, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `MedTracker_Data_${Date.now()}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            alert('JSON file downloaded! Transfer to your phone and import in MedTracker app.');
+        }
+
+        // Clear all
+        function clearAll() {
+            if (!confirm('This will delete ALL data. Are you sure?')) return;
+            
+            data = {
+                people: [],
+                doctors: [],
+                medications: [],
+                conditions: [],
+                allergies: [],
+                appointments: []
+            };
+
+            nextIds = {
+                people: 1,
+                doctors: 1,
+                medications: 1,
+                conditions: 1,
+                allergies: 1,
+                appointments: 1
+            };
+
+            renderAll();
+            updatePersonSelectors();
+            updateDoctorSelectors();
+        }
+
+        // Render all
+        function renderAll() {
+            renderPeople();
+            renderDoctors();
+            renderMedications();
+            renderConditions();
+            renderAllergies();
+            renderAppointments();
+        }
+
+        // Initialize
+        renderAll();
+    </script>
+</body>
+</html>

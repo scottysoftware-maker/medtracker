@@ -358,6 +358,7 @@
             <button class="tab" onclick="switchTab('allergies', event)">⚠️ Allergies</button>
             <button class="tab" onclick="switchTab('appointments', event)">📅 Appointments</button>
             <button class="tab" onclick="switchTab('surgical', event)">🩹 Surgical</button>
+            <button class="tab" onclick="switchTab('codes', event)">🔍 Med Codes</button>
         </div>
 
         <!-- People Tab -->
@@ -605,6 +606,34 @@
             </div>
         </div>
 
+        <!-- Medical Code Lookup Tab -->
+        <div id="codes-tab" class="tab-content">
+            <div class="form-section">
+                <h3>🔍 Medical Code Translator</h3>
+                <p style="color:#666;margin-bottom:16px">Paste a batch of medical codes below (one per line or comma-separated). Supports ICD-10, CPT, and NDC codes.</p>
+
+                <div class="form-row">
+                    <div class="form-group" style="flex:1">
+                        <label>Paste Codes Here</label>
+                        <textarea id="code-input" rows="8" placeholder="E11.9&#10;Z87.39&#10;99213&#10;00406-0734-01&#10;...or comma separated: E11.9, Z87.39, 99213"></textarea>
+                    </div>
+                    <div class="form-group" style="flex:1">
+                        <label>Code Type</label>
+                        <select id="code-type" style="margin-bottom:8px">
+                            <option value="auto">Auto-detect</option>
+                            <option value="icd10">ICD-10 (Diagnosis)</option>
+                            <option value="cpt">CPT (Procedure)</option>
+                            <option value="ndc">NDC (Drug)</option>
+                        </select>
+                        <button class="btn btn-add" onclick="translateCodes()" style="width:100%">Translate Codes</button>
+                        <button class="btn" onclick="clearCodes()" style="width:100%;margin-top:8px;background:#666">Clear</button>
+                    </div>
+                </div>
+
+                <div id="code-results" style="margin-top:16px"></div>
+            </div>
+        </div>
+
         <!-- Surgical History Tab -->
         <div id="surgical-tab" class="tab-content">
             <div class="form-section">
@@ -693,6 +722,18 @@
                     <div class="form-group">
                         <label>Additional Notes</label>
                         <textarea id="surg-notes" placeholder="Optional"></textarea>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group" style="flex:1">
+                        <label>📎 Document Links (one per line)</label>
+                        <textarea id="surg-documentLinks" placeholder="Paste URLs here, one per line&#10;e.g. https://drive.google.com/file/...&#10;https://dropbox.com/..." rows="3"></textarea>
+                        <small style="color:#666">Google Drive, Dropbox, OneDrive, or any URL</small>
+                    </div>
+                    <div class="form-group" style="flex:1">
+                        <label>📋 Document Notes</label>
+                        <textarea id="surg-documentNotes" placeholder="e.g. Operative report, Discharge summary, Pathology report..." rows="3"></textarea>
                     </div>
                 </div>
 
@@ -1269,6 +1310,8 @@
                 followUpRequired: document.getElementById('surg-followUpRequired').checked ? 1 : 0,
                 followUpDate: document.getElementById('surg-followUpDate').value || null,
                 notes: document.getElementById('surg-notes').value.trim() || null,
+                documentLinks: document.getElementById('surg-documentLinks').value.trim() || null,
+                documentNotes: document.getElementById('surg-documentNotes').value.trim() || null,
                 createdAt: nowISO(),
                 updatedAt: nowISO()
             };
@@ -1295,6 +1338,8 @@
             document.getElementById('surg-followUpRequired').checked = false;
             document.getElementById('surg-followUpDate').value = '';
             document.getElementById('surg-notes').value = '';
+            document.getElementById('surg-documentLinks').value = '';
+            document.getElementById('surg-documentNotes').value = '';
         }
 
         function renderSurgicalHistory() {
@@ -1323,6 +1368,8 @@
                             ${surg.followUpRequired ? `<p>Follow Up Required: Yes ${surg.followUpDate ? `(Date: ${escapeHtml(surg.followUpDate)})` : ''}</p>` : ''}
                             ${surg.recoveryNotes ? `<p>Recovery Notes: ${escapeHtml(surg.recoveryNotes)}</p>` : ''}
                             ${surg.notes ? `<p>Notes: ${escapeHtml(surg.notes)}</p>` : ''}
+                            ${surg.documentNotes ? `<p><strong>📋 Docs:</strong> ${escapeHtml(surg.documentNotes)}</p>` : ''}
+                            ${surg.documentLinks ? `<div style="margin-top:6px">${surg.documentLinks.split('\n').filter(l=>l.trim()).map(link => `<a href="${escapeHtml(link.trim())}" target="_blank" style="display:block;color:#1565C0;font-size:13px;word-break:break-all;margin-bottom:3px">🔗 ${escapeHtml(link.trim())}</a>`).join('')}</div>` : ''}
                         </div>
                         <div class="item-actions">
                             <button class="btn-small btn-delete" onclick="deleteSurgery(${surg.id})">Delete</button>
@@ -1330,6 +1377,157 @@
                     </div>
                 `;
             }).join('');
+        }
+
+        // ── Medical Code Translation ──────────────────────────────────────────────
+        const ICD10_COMMON = {
+            'E11.9':'Type 2 diabetes mellitus without complications',
+            'E11.65':'Type 2 diabetes mellitus with hyperglycemia',
+            'E11.40':'Type 2 diabetes mellitus with diabetic neuropathy, unspecified',
+            'E78.5':'Hyperlipidemia, unspecified',
+            'E78.00':'Pure hypercholesterolemia, unspecified',
+            'I10':'Essential (primary) hypertension',
+            'I25.10':'Atherosclerotic heart disease of native coronary artery without angina',
+            'I48.91':'Unspecified atrial fibrillation',
+            'I50.9':'Heart failure, unspecified',
+            'J45.909':'Unspecified asthma, uncomplicated',
+            'J44.9':'Chronic obstructive pulmonary disease, unspecified',
+            'K21.0':'Gastro-esophageal reflux disease with esophagitis',
+            'K21.9':'Gastro-esophageal reflux disease without esophagitis',
+            'M79.3':'Panniculitis, unspecified',
+            'M54.5':'Low back pain',
+            'M54.50':'Low back pain, unspecified',
+            'M17.11':'Primary osteoarthritis, right knee',
+            'M17.12':'Primary osteoarthritis, left knee',
+            'M16.11':'Primary osteoarthritis, right hip',
+            'M16.12':'Primary osteoarthritis, left hip',
+            'N18.3':'Chronic kidney disease, stage 3 (moderate)',
+            'N18.9':'Chronic kidney disease, unspecified',
+            'F32.9':'Major depressive disorder, single episode, unspecified',
+            'F41.1':'Generalized anxiety disorder',
+            'F41.9':'Anxiety disorder, unspecified',
+            'G47.33':'Obstructive sleep apnea (adult)',
+            'G43.909':'Migraine, unspecified, not intractable, without status migrainosus',
+            'Z87.891':'Personal history of nicotine dependence',
+            'Z79.4':'Long-term (current) use of insulin',
+            'Z79.82':'Long-term (current) use of aspirin',
+            'Z87.39':'Personal history of other endocrine, nutritional and metabolic diseases',
+            'Z96.641':'Presence of right artificial knee joint',
+            'Z96.642':'Presence of left artificial knee joint',
+            'Z96.651':'Presence of right artificial hip joint',
+            'Z96.652':'Presence of left artificial hip joint',
+            'C50.919':'Malignant neoplasm of unspecified site of unspecified female breast',
+            'C61':'Malignant neoplasm of prostate',
+            'Z85.3':'Personal history of malignant neoplasm of breast',
+            'Z85.46':'Personal history of malignant neoplasm of prostate',
+            'S72.001A':'Fracture of unspecified part of neck of right femur, initial encounter',
+            'T14.90XA':'Injury, unspecified, initial encounter',
+        };
+
+        const CPT_COMMON = {
+            '99201':'Office visit, new patient, minimal complexity',
+            '99202':'Office visit, new patient, low complexity',
+            '99203':'Office visit, new patient, moderate complexity',
+            '99204':'Office visit, new patient, high complexity',
+            '99205':'Office visit, new patient, high complexity (extended)',
+            '99211':'Office visit, established patient, minimal complexity',
+            '99212':'Office visit, established patient, low complexity',
+            '99213':'Office visit, established patient, moderate complexity',
+            '99214':'Office visit, established patient, high complexity',
+            '99215':'Office visit, established patient, high complexity (extended)',
+            '99232':'Subsequent hospital care, moderate complexity',
+            '99233':'Subsequent hospital care, high complexity',
+            '99291':'Critical care, first 30-74 min',
+            '36415':'Routine venipuncture (blood draw)',
+            '85025':'Complete blood count (CBC) with differential',
+            '80053':'Comprehensive metabolic panel',
+            '80048':'Basic metabolic panel',
+            '82947':'Glucose test',
+            '83036':'Hemoglobin A1c',
+            '84443':'Thyroid stimulating hormone (TSH)',
+            '80061':'Lipid panel',
+            '81003':'Urinalysis, automated',
+            '93000':'Electrocardiogram (EKG), with interpretation',
+            '71046':'Chest X-ray, 2 views',
+            '70553':'MRI brain with and without contrast',
+            '27447':'Total knee arthroplasty',
+            '27130':'Total hip arthroplasty',
+            '43239':'Esophagogastroduodenoscopy (EGD) with biopsy',
+            '45378':'Colonoscopy, diagnostic',
+            '45380':'Colonoscopy with biopsy',
+            '19301':'Partial mastectomy (lumpectomy)',
+            '00400':'Anesthesia for superficial procedures on extremities',
+            '00402':'Anesthesia for reconstructive procedures on breast',
+            '00406':'Anesthesia for intrathoracic procedures',
+        };
+
+        function detectCodeType(code) {
+            code = code.trim().toUpperCase();
+            // ICD-10: letter + digits + optional dot
+            if (/^[A-Z]\d{2}(\.\d+)?[A-Z]?$/.test(code)) return 'icd10';
+            // NDC: usually xx-xxxx-xx or xxxxxxxx format with dashes
+            if (/^\d{4,5}-\d{3,4}-\d{2}$/.test(code)) return 'ndc';
+            // CPT: 5 digits
+            if (/^\d{5}$/.test(code)) return 'cpt';
+            return 'unknown';
+        }
+
+        function lookupCode(code, typeHint) {
+            const c = code.trim().toUpperCase();
+            const type = typeHint === 'auto' ? detectCodeType(c) : typeHint;
+            if (type === 'icd10') {
+                return { type: 'ICD-10', description: ICD10_COMMON[c] || null };
+            }
+            if (type === 'cpt') {
+                return { type: 'CPT', description: CPT_COMMON[c] || null };
+            }
+            if (type === 'ndc') {
+                return { type: 'NDC', description: null }; // NDC requires live lookup
+            }
+            return { type: 'Unknown', description: null };
+        }
+
+        function translateCodes() {
+            const raw = document.getElementById('code-input').value;
+            const typeHint = document.getElementById('code-type').value;
+            if (!raw.trim()) { alert('Please paste some codes first'); return; }
+
+            // Parse — handle newlines and commas
+            const codes = raw.split(/[\n\r,]+/).map(c => c.trim()).filter(c => c.length > 0);
+            const results = codes.map(code => ({ code, ...lookupCode(code, typeHint) }));
+
+            const found = results.filter(r => r.description);
+            const notFound = results.filter(r => !r.description);
+
+            let html = `<p style="margin-bottom:12px"><strong>${results.length} codes processed — ${found.length} translated, ${notFound.length} not in local database</strong></p>`;
+
+            if (found.length > 0) {
+                html += '<table style="width:100%;border-collapse:collapse;margin-bottom:16px">';
+                html += '<tr style="background:#1565C0;color:white"><th style="padding:8px;text-align:left">Code</th><th style="padding:8px;text-align:left">Type</th><th style="padding:8px;text-align:left">Description</th></tr>';
+                found.forEach((r, i) => {
+                    html += `<tr style="background:${i%2===0?'#f5f5f5':'white'}">
+                        <td style="padding:8px;font-family:monospace;font-weight:bold">${escapeHtml(r.code)}</td>
+                        <td style="padding:8px"><span style="background:#e3f2fd;color:#1565C0;padding:2px 6px;border-radius:4px;font-size:12px">${r.type}</span></td>
+                        <td style="padding:8px">${escapeHtml(r.description)}</td>
+                    </tr>`;
+                });
+                html += '</table>';
+            }
+
+            if (notFound.length > 0) {
+                html += `<div style="background:#fff3e0;border:1px solid #ffb74d;border-radius:8px;padding:12px">
+                    <strong>⚠️ Not in local database (${notFound.length} codes):</strong>
+                    <p style="font-size:12px;color:#666;margin:4px 0 8px">These may be valid codes — look them up at <a href="https://www.icd10data.com" target="_blank">icd10data.com</a> or <a href="https://www.aapc.com/codes/cpt-codes-range/" target="_blank">aapc.com</a></p>
+                    <div style="font-family:monospace;font-size:13px">${notFound.map(r => escapeHtml(r.code)).join(', ')}</div>
+                </div>`;
+            }
+
+            document.getElementById('code-results').innerHTML = html;
+        }
+
+        function clearCodes() {
+            document.getElementById('code-input').value = '';
+            document.getElementById('code-results').innerHTML = '';
         }
 
         function deleteSurgery(id) {
@@ -1391,6 +1589,29 @@
         }
 
         function importAnyJSON(loadedData) {
+            // 0) Flutter version 2 export — uses "records" array
+            if (loadedData.version === 2 && Array.isArray(loadedData.records)) {
+                const flat = {
+                    people: [], doctors: [], medications: [],
+                    conditions: [], allergies: [], appointments: [], surgicalHistory: []
+                };
+                loadedData.records.forEach(record => {
+                    if (!record.person) return;
+                    const p = record.person;
+                    flat.people.push({ id: p.id, name: p.name, relationship: p.relationship || null,
+                        dateOfBirth: p.dateOfBirth || null, bloodType: p.bloodType || null,
+                        emergencyContactName: p.emergencyContactName || null,
+                        emergencyContactPhone: p.emergencyContactPhone || null, notes: p.notes || null });
+                    if (Array.isArray(record.medications))     record.medications.forEach(m => flat.medications.push({ ...m, personId: p.id }));
+                    if (Array.isArray(record.doctors))         record.doctors.forEach(d => flat.doctors.push({ ...d, personId: p.id }));
+                    if (Array.isArray(record.appointments))    record.appointments.forEach(a => flat.appointments.push({ ...a, personId: p.id }));
+                    if (Array.isArray(record.conditions))      record.conditions.forEach(c => flat.conditions.push({ ...c, personId: p.id }));
+                    if (Array.isArray(record.allergies))       record.allergies.forEach(a => flat.allergies.push({ ...a, personId: p.id }));
+                    if (Array.isArray(record.surgicalHistory)) record.surgicalHistory.forEach(s => flat.surgicalHistory.push({ ...s, personId: p.id }));
+                });
+                return sanitizeFlat(flat);
+            }
+
             // 1) Phone nested export (people[0].doctors exists)
             if (loadedData.people && Array.isArray(loadedData.people) &&
                 loadedData.people.length > 0 && (loadedData.people[0].doctors !== undefined)) {
@@ -1418,12 +1639,9 @@
                     if (Array.isArray(person.conditions)) person.conditions.forEach(c => flat.conditions.push({ ...c, personId: person.id }));
                     if (Array.isArray(person.allergies)) person.allergies.forEach(a => flat.allergies.push({ ...a, personId: person.id }));
                     if (Array.isArray(person.appointments)) person.appointments.forEach(a => flat.appointments.push({ ...a, personId: person.id }));
-
-                    // NEW: surgical history can be nested per person
                     if (Array.isArray(person.surgicalHistory)) person.surgicalHistory.forEach(s => flat.surgicalHistory.push({ ...s, personId: person.id }));
                 });
 
-                // Also accept a top-level surgicalHistory if present (merge in)
                 if (Array.isArray(loadedData.surgicalHistory)) {
                     loadedData.surgicalHistory.forEach(s => flat.surgicalHistory.push(s));
                 }
@@ -1433,7 +1651,6 @@
 
             // 2) Flat desktop format (data.people and data.doctors exists)
             if (loadedData.people && loadedData.doctors !== undefined) {
-                // ensure surgicalHistory exists
                 if (!Array.isArray(loadedData.surgicalHistory)) loadedData.surgicalHistory = [];
                 return sanitizeFlat(loadedData);
             }
